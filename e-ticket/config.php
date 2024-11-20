@@ -1,9 +1,17 @@
 <?php
-// Define database connection constants
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', 'July112001.yussy');
-define('DB_NAME', 'gabisan_dbms');
+// Check if constants are already defined before defining them
+if (!defined('DB_HOST')) {
+    define('DB_HOST', 'localhost');
+}
+if (!defined('DB_USER')) {
+    define('DB_USER', 'root');
+}
+if (!defined('DB_PASS')) {
+    define('DB_PASS', 'July112001.yussy');
+}
+if (!defined('DB_NAME')) {
+    define('DB_NAME', 'gabisan_dbms');
+}
 
 // Create connection using defined constants
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);

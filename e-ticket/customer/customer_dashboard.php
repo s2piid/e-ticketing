@@ -2,7 +2,7 @@
 session_start();
 
 // Ensure the user is logged in before accessing the dashboard
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");
     exit();
 }
@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 include ('C:/xampp/htdocs/e-ticket/config.php');
 
 // Fetch user details from the database
-$user_id = $_SESSION['user_id'];
+$user_id = $_SESSION['customer_id'];
 $stmt = $conn->prepare("SELECT username, email FROM Users WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -59,6 +59,7 @@ header {
 
 .logo img {
     height: 50px;
+    width: 200px;
 }
 
 nav ul {
@@ -118,7 +119,7 @@ footer {
     <div class="dashboard-container">
         <header>
             <div class="logo">
-                <img src="2.png" alt="Logo" class="logo-img"> <!-- Add your logo here -->
+                <img src="gabisan2.jpg" alt="Logo" class="logo-img"> <!-- Add your logo here -->
             </div>
             <nav>
                 <ul>
@@ -137,9 +138,9 @@ footer {
             <div class="dashboard-buttons">
                 <button onclick="window.location.href='schedule_and_rate.php'">Schedule and Rates</button>
                 <button onclick="window.location.href='book.php'">Book</button>
-                <button onclick="window.location.href='booking_history.php'">Booking History</button>
-                <button onclick="window.location.href='update_profile.php'">Update Profile</button>
-                <button onclick="window.location.href='change_password.php'">Change Password</button>
+                <button onclick="window.location.href='book_history.php'">Booking History</button>
+                <button onclick="window.location.href='update_pro.php'">Update Profile</button>
+                <button onclick="window.location.href='change_pass.php'">Change Password</button>
             </div>
         </div>
     </div>

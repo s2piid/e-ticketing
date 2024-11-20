@@ -1,165 +1,114 @@
+
 <?php
 session_start();
+include('C:/xampp/htdocs/e-ticket/config.php'); // Ensure the correct path
 
-// Ensure the user is logged in
-if (!isset($_SESSION['user_id'])) {
+// Check if the admin is logged in
+if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");
     exit();
 }
 
-// Include database connection
-include('C:/xampp/htdocs/e-ticket/config.php');
+// Fetch user details from the database
+$user_id = $_SESSION['customer_id'];
 
-// Fetch ferry schedules with accommodation
-$schedules_query = "
-    SELECT 
-        fs.ferry_id, 
-        fs.departure_port, 
-        fs.arrival_port, 
-        fs.departure_time, 
-        fs.arrival_time,
-        ap.price,
-        a.accom_type
-    FROM ferry_schedule fs
-    LEFT JOIN accommodation_prices ap ON fs.ferry_id = ap.ferry_id
-    LEFT JOIN accommodation a ON ap.accom_id = a.accom_price_id
-    WHERE fs.status = 'active'
-";
-$schedules = $conn->query($schedules_query);
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+// Fetch unique departure ports
+$departureQuery = "SELECT DISTINCT departure_port FROM ferry_schedule WHERE status = 'active'";
+$departureResult = $conn->query($departureQuery);
+
+// Fetch unique arrival ports
+$arrivalQuery = "SELECT DISTINCT arrival_port FROM ferry_schedule WHERE status = 'active'";
+$arrivalResult = $conn->query($arrivalQuery);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book a Trip</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-        form {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin: 10px 0 5px;
-        }
-        select, input[type="text"], input[type="number"], input[type="submit"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        input[type="submit"] {
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        .total-display {
-            font-weight: bold;
-            font-size: 1.2em;
-            text-align: center;
-            margin-top: 20px;
-        }
-    </style>
-    <script>
-    function updateTotal() {
-        const selectedOption = document.getElementById('ferry_id').selectedOptions[0];
-        const price = parseFloat(selectedOption?.dataset.price || 0);
-        const discountType = document.getElementById('discount_type').value;
-        const numTickets = parseInt(document.getElementById('num_tickets').value || 0);
-
-        // Calculate subtotal
-        let subtotal = price * numTickets;
-        let discount = 0;
-
-        // Determine discount
-        if (subtotal > 0) {
-            switch (discountType) {
-                case 'student':
-                    discount = subtotal * 0.20; // 20% discount
-                    break;
-                case 'senior':
-                    discount = subtotal * 0.30; // 30% discount
-                    break;
-                case 'pwd':
-                    discount = subtotal * 0.20; // 20% discount
-                    break;
-                default:
-                    discount = 0; // No discount
-                    break;
-            }
-        }
-
-        // Calculate total cost
-        const totalCost = subtotal - discount;
-
-        // Update the total display
-        document.getElementById('total_display').innerText = 
-            `Total Cost: ₱${totalCost.toFixed(2)}`;
-    }
-
-    // Automatically update total cost on page load and input changes
-    document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById('ferry_id').addEventListener('change', updateTotal);
-        document.getElementById('discount_type').addEventListener('change', updateTotal);
-        document.getElementById('num_tickets').addEventListener('input', updateTotal);
-    });
-</script>
-
+    <title>Booking System</title>
+    <!-- Include Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h1>Book a Trip</h1>
-    <form method="POST" action="confirm_booking.php">
-        <label for="ferry_id">Select Ferry Schedule:</label>
-        <select name="ferry_id" id="ferry_id" onchange="updateTotal()" required>
-            <option value="" data-price="0">-- Select Schedule --</option>
-            <?php while ($row = $schedules->fetch_assoc()): ?>
-                <option value="<?= $row['ferry_id'] ?>" data-price="<?= $row['price'] ?>">
-                    Ferry ID <?= $row['ferry_id'] ?> 
-                    (<?= $row['departure_port'] ?> → <?= $row['arrival_port'] ?> @ <?= $row['departure_time'] ?>) 
-                    [<?= $row['accom_type'] ?>] - ₱<?= number_format($row['price'], 2) ?>
-                </option>
-            <?php endwhile; ?>
-        </select>
+    <div class="container mt-5">
+        <h2 class="text-center">Book Your Ferry</h2>
+        
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="bookingTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="destination-tab" data-bs-toggle="tab" data-bs-target="#destination" type="button" role="tab" aria-controls="destination" aria-selected="true">
+                    Destination & Departure
+                </button>
+            </li>
+            <!-- You can add more tabs here -->
+        </ul>
 
-        <label for="discount_type">Select Discount Type:</label>
-        <select name="discount_type" id="discount_type" onchange="updateTotal()" required>
-            <option value="regular">Regular</option>
-            <option value="student">Student</option>
-            <option value="senior">Senior Citizen</option>
-            <option value="pwd">PWD</option>
-        </select>
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="bookingTabsContent">
+            <!-- Destination & Departure Tab -->
+            <div class="tab-pane fade show active" id="destination" role="tabpanel" aria-labelledby="destination-tab">
+                <form action="book_details.php" method="POST">
+                    <div class="mb-3">
+                        <label for="departure" class="form-label">Departure</label>
+                        <select name="departure" id="departure" class="form-select" required>
+                            <option value="" disabled selected>Select Departure</option>
+                            <?php
+                            // Populate departure options
+                            if ($departureResult->num_rows > 0) {
+                                while ($row = $departureResult->fetch_assoc()) {
+                                    echo "<option value='" . $row['departure_port'] . "'>" . $row['departure_port'] . "</option>";
+                                }
+                            } else {
+                                echo "<option value='' disabled>No Departures Available</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="destination" class="form-label">Destination</label>
+                        <select name="destination" id="destination" class="form-select" required>
+                            <option value="" disabled selected>Select Destination</option>
+                            <?php
+                            // Populate arrival options
+                            if ($arrivalResult->num_rows > 0) {
+                                while ($row = $arrivalResult->fetch_assoc()) {
+                                    echo "<option value='" . $row['arrival_port'] . "'>" . $row['arrival_port'] . "</option>";
+                                }
+                            } else {
+                                echo "<option value='' disabled>No Destinations Available</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
 
-        <label for="passenger_name">Passenger Name:</label>
-        <input type="text" name="passenger_name" id="passenger_name" required>
+                    <!-- Date of Departure -->
+                    <div class="mb-3">
+                        <label for="departure_date" class="form-label">Date of Departure</label>
+                        <input type="date" name="departure_date" id="departure_date" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="passengers" class="form-label">Number of Passengers</label>
+                        <input type="number" name="passengers" id="passengers" class="form-control" min="1" max="100" placeholder="Enter the number of passengers" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Next</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-        <label for="contact">Contact Number:</label>
-        <input type="text" name="contact" id="contact" required>
-
-        <label for="num_tickets">Number of Tickets:</label>
-        <input type="number" name="num_tickets" id="num_tickets" min="1" onchange="updateTotal()" required>
-
-        <div id="total_display" class="total-display">Total Cost: ₱0.00</div>
-
-        <input type="submit" value="Book Now">
-    </form>
+    <!-- Include Bootstrap JS for functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+<?php
+// Close the database connection
+$conn->close();
+?>
