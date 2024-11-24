@@ -1,6 +1,6 @@
 <?php
 session_start();
-
+include ('C:/xampp/htdocs/e-ticket/config.php');
 // Ensure the user is logged in before accessing the dashboard
 if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");

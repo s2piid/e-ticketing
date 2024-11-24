@@ -10,7 +10,7 @@ if (!defined('DB_PASS')) {
     define('DB_PASS', 'July112001.yussy');
 }
 if (!defined('DB_NAME')) {
-    define('DB_NAME', 'gabisan_dbms');
+    define('DB_NAME', 'gabisan');
 }
 
 // Create connection using defined constants

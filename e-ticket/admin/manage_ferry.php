@@ -7,21 +7,28 @@ if (!isset($_SESSION['admin_id'])) {
     header("Location: admin_login.php");
     exit();
 }
-
-// Function to log admin actions with dynamic action messages
-function logAdminAction($admin_id, $action, $target_id) {
+// Function to log admin actions
+function logAddFerry($admin_id, $action, $target_id) {
     global $conn;
+    $action = 'add new ferry';
+    // Prepare and execute the log insert query
     $stmt = $conn->prepare("INSERT INTO Admin_Actions_Log (admin_id, action, target_id) VALUES (?, ?, ?)");
     $stmt->bind_param("isi", $admin_id, $action, $target_id);
-    return $stmt->execute();
+    if ($stmt->execute()) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // Handle form submission for adding a ferry
 if (isset($_POST['add_ferry'])) {
-    $ferry_name = mysqli_real_escape_string($conn, $_POST['ferry_name']);
-    $departure_port = mysqli_real_escape_string($conn, $_POST['departure_port']);
-    $arrival_port = mysqli_real_escape_string($conn, $_POST['arrival_port']);
-    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $ferry_name = $_POST['ferry_name'];
+    $departure_port = $_POST['departure_port'];
+    $arrival_port = $_POST['arrival_port'];
+    $status = $_POST['status'];
+
+    // Directly get time in 24-hour format
     $departure_time = $_POST['departure_time']; // e.g., "15:30"
     $arrival_time = $_POST['arrival_time']; // e.g., "03:45"
 
@@ -29,13 +36,15 @@ if (isset($_POST['add_ferry'])) {
     $stmt = $conn->prepare("INSERT INTO ferries (ferry_name) VALUES (?)");
     $stmt->bind_param("s", $ferry_name);
     if ($stmt->execute()) {
+        // Get the ferry_id of the newly inserted ferry
         $ferry_id = $conn->insert_id;
 
         // Insert ferry schedule details, using the retrieved ferry_id
         $stmt = $conn->prepare("INSERT INTO ferry_schedule (ferry_id, departure_port, arrival_port, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("isssss", $ferry_id, $departure_port, $arrival_port, $departure_time, $arrival_time, $status);
         if ($stmt->execute()) {
-            logAdminAction($_SESSION['admin_id'], "Added new ferry: " . $ferry_name, $ferry_id);
+            // Log the admin action
+            logAddFerry($_SESSION['admin_id'], 'add new ferry', $ferry_id);
             $success_message = "Ferry and schedule added successfully.";
         } else {
             $error_message = "Error adding ferry schedule: " . $stmt->error;
@@ -45,11 +54,37 @@ if (isset($_POST['add_ferry'])) {
     }
     $stmt->close();
 }
+//Admin Log
+function logAddAccommodation($admin_id, $action, $target_id) {
+    global $conn;
+    $action = 'add accomodation type';
+    // Prepare and execute the log insert query
+    $stmt = $conn->prepare("INSERT INTO Admin_Actions_Log (admin_id, action, target_id) VALUES (?, ?, ?)");
+    $stmt->bind_param("isi", $admin_id, $action, $target_id);
+    if ($stmt->execute()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+//Admin Log
+function logAddAccommodationPrice($admin_id, $action, $target_id) {
+    global $conn;
+    $action = 'add new Accommodation Price';
+    // Prepare and execute the log insert query
+    $stmt = $conn->prepare("INSERT INTO Admin_Actions_Log (admin_id, action, target_id) VALUES (?, ?, ?)");
+    $stmt->bind_param("isi", $admin_id, $action, $target_id);
+    if ($stmt->execute()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 // Handle form submission for adding accommodation and price
 if (isset($_POST['add_accommodation'])) {
-    $ferry_name = mysqli_real_escape_string($conn, $_POST['ferry_name']);
-    $accom_type = mysqli_real_escape_string($conn, $_POST['accom_type']);
+    $ferry_name = $_POST['ferry_name'];
+    $accom_type = $_POST['accom_type'];
     $price = $_POST['price'];
 
     // 1. Retrieve ferry_id
@@ -63,6 +98,12 @@ if (isset($_POST['add_accommodation'])) {
     if (!$ferry_id) {
         $error_message = "Ferry not found.";
     } else {
+        // 2. Insert new accommodation type if it doesn't exist
+        $stmt = $conn->prepare("INSERT INTO accommodation (accom_type) VALUES (?) ON DUPLICATE KEY UPDATE accom_type = accom_type");
+        $stmt->bind_param("s", $accom_type);
+        $stmt->execute();
+        $stmt->close();
+
         // Retrieve accom_id
         $stmt = $conn->prepare("SELECT accom_price_id FROM accommodation WHERE accom_type = ?");
         $stmt->bind_param("s", $accom_type);
@@ -77,56 +118,25 @@ if (isset($_POST['add_accommodation'])) {
             // 3. Insert price for the accommodation linked to the specific ferry
             $stmt = $conn->prepare("INSERT INTO accommodation_prices (ferry_id, accom_id, price) VALUES (?, ?, ?)");
             $stmt->bind_param("iid", $ferry_id, $accom_id, $price);
+            
             if ($stmt->execute()) {
                 $success_message = "Accommodation and price added successfully.";
-                logAdminAction($_SESSION['admin_id'], "Added new accommodation price for ferry: " . $ferry_name, $ferry_id);
+                logAddAccommodationPrice($_SESSION['admin_id'], 'add new Accomodation Price', $ferry_id);
             } else {
-                $error_message = "Error adding accommodation price: " . $stmt->error;
+                $error_message = "Error adding accommodation: " . $stmt->error;
             }
             $stmt->close();
         }
     }
 }
 
-// Handle form submission for updating the ferry schedule
-if (isset($_POST['update_schedule'])) {
-    $ferry_name = mysqli_real_escape_string($conn, $_POST['ferry_name']);
-    $departure_port = mysqli_real_escape_string($conn, $_POST['departure_port']);
-    $arrival_port = mysqli_real_escape_string($conn, $_POST['arrival_port']);
-    $departure_time = $_POST['departure_time'];
-    $arrival_time = $_POST['arrival_time'];
-    $status = mysqli_real_escape_string($conn, $_POST['status']);
 
-    // Get ferry ID based on the ferry name
-    $stmt = $conn->prepare("SELECT ferry_id FROM ferries WHERE ferry_name = ?");
-    $stmt->bind_param("s", $ferry_name);
-    $stmt->execute();
-    $stmt->bind_result($ferry_id);
-    $stmt->fetch();
-    $stmt->close();
-
-    if (!$ferry_id) {
-        $error_message = "Ferry not found.";
-    } else {
-        // Update ferry schedule
-        $stmt = $conn->prepare("UPDATE ferry_schedule SET departure_port = ?, arrival_port = ?, departure_time = ?, arrival_time = ?, status = ? WHERE ferry_id = ?");
-        $stmt->bind_param("sssssi", $departure_port, $arrival_port, $departure_time, $arrival_time, $status, $ferry_id);
-        if ($stmt->execute()) {
-            $success_message = "Schedule updated successfully.";
-        } else {
-            $error_message = "Error updating schedule: " . $stmt->error;
-        }
-        $stmt->close();
-    }
-}
-
-// Fetch list of ferries and accommodation types
+// Fetch list of ferries for displaying in dropdown
 $ferries = $conn->query("SELECT ferry_id, ferry_name FROM ferries ORDER BY ferry_name");
 $accommodation_types = $conn->query("SELECT * FROM accommodation");
 
 $conn->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,42 +180,70 @@ h3 {
     font-size: 22px;
 }
 
-/* Tab Navigation */
-.tabs {
-    display: flex;
-    justify-content: space-around;
+/* Success and Error Messages */
+.success-message {
+    color: #155724;
+    background-color: #d4edda;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #c3e6cb;
+    text-align: center;
     margin-bottom: 20px;
 }
 
-.tabs button {
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Input Groups */
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.input-group select {
+    cursor: pointer;
+    background-color: #fff;
+}
+
+/* Button Styling */
+.btn {
     background-color: #007bff;
-    color: white;
-    padding: 14px 20px;
+    color: #fff;
+    padding: 14px;
     font-size: 18px;
     border: none;
+    border-radius: 8px;
     cursor: pointer;
-    border-radius: 6px;
-    transition: background-color 0.3s;
-    flex: 1;
-    text-align: center;
+    width: 100%;
+    transition: background-color 0.3s ease, transform 0.2s;
 }
 
-.tabs button:hover {
+.btn:hover {
     background-color: #0056b3;
-}
-
-/* Active Tab Styling */
-.tabs button.active {
-    background-color: #0056b3;
-}
-
-/* Content Section Styling */
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
+    transform: scale(1.02);
 }
 
 /* Form Styling */
@@ -213,138 +251,184 @@ form {
     background-color: #f7f9fc;
     padding: 25px;
     border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.input-group {
-    margin-bottom: 15px;
-}
-
-.input-group label {
-    font-size: 18px;
-    margin-bottom: 5px;
-    display: block;
-}
-
-.input-group input,
-.input-group select {
+/* Table Styling */
+table {
     width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border-collapse: collapse;
+    margin-top: 30px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-/* Button Styling */
-button {
-    background-color: #28a745;
-    color: white;
+table th, table td {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+    font-size: 16px;
+}
+
+table th {
+    background-color: #e9ecef;
+    color: #343a40;
+    font-weight: bold;
+}
+
+table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+table tbody tr:hover {
+    background-color: #e2e6ea;
+}
+
+/* Responsive Styling */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 15px;
+    }
+
+    .input-group input,
+    .input-group select {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .btn {
+        font-size: 16px;
+        padding: 12px;
+    }
+}
+
+/* Navigation Menu Styling */
+.menu {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.menu a,
+.btn-logout {
     padding: 12px 20px;
-    font-size: 18px;
+    background: #17a2b8;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
     border: none;
+    font-size: 16px;
     cursor: pointer;
-    border-radius: 8px;
     transition: background-color 0.3s;
 }
 
-button:hover {
-    background-color: #218838;
+.menu a:hover,
+.btn-logout:hover {
+    background: #138496;
 }
 
-/* Success and Error Messages */
-.success-message,
-.error-message {
-    margin-top: 20px;
-    padding: 10px;
-    border-radius: 6px;
-    text-align: center;
+/* Logout Button Specific */
+.btn-logout {
+    background: #dc3545;
 }
 
-.success-message {
-    background-color: #d4edda;
-    color: #155724;
+.btn-logout:hover {
+    background: #c82333;
 }
 
-.error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-}
+
 </style>
 </head>
 <body>
-<div class="container">
-    <h2>Manage Ferries and Schedules</h2>
-    <!-- Tab Navigation -->
-    <div class="tabs">
-        <button class="active" onclick="showTab('addFerry')">Add Ferry</button>
-        <button onclick="showTab('addAccommodation')">Add Accommodation</button>
-        <button onclick="showTab('updateSchedule')">Update Schedule</button>
-    </div>
 
-    <!-- Add Ferry Form -->
-    <div id="addFerry" class="tab-content active">
-        <h3>Add New Ferry</h3>
-        <?php if (isset($success_message)) { echo "<div class='success-message'>$success_message</div>"; } ?>
-        <?php if (isset($error_message)) { echo "<div class='error-message'>$error_message</div>"; } ?>
-        <form method="POST" action="">
-            <div class="input-group">
-                <label for="ferry_name">Ferry Name</label>
-                <input type="text" name="ferry_name" id="ferry_name" required>
-            </div>
-            <div class="input-group">
-                <label for="departure_port">Departure Port</label>
-                <input type="text" name="departure_port" id="departure_port" required>
-            </div>
-            <div class="input-group">
-                <label for="arrival_port">Arrival Port</label>
-                <input type="text" name="arrival_port" id="arrival_port" required>
-            </div>
-            <div class="input-group">
-                <label for="departure_time">Departure Time</label>
-                <input type="time" name="departure_time" id="departure_time" required>
-            </div>
-            <div class="input-group">
-                <label for="arrival_time">Arrival Time</label>
-                <input type="time" name="arrival_time" id="arrival_time" required>
-            </div>
-            <div class="input-group">
-                <label for="status">Status</label>
-                <select name="status" id="status" required>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
-            </div>
-            <button type="submit" name="add_ferry">Add Ferry</button>
-        </form>
-    </div>
 
-    <!-- Add Accommodation Form -->
-    <div id="addAccommodation" class="tab-content">
-        <h3>Add Accommodation</h3>
-        <!-- Form goes here, similar structure as Add Ferry -->
-    </div>
-
-    <!-- Update Schedule Form -->
-    <div id="updateSchedule" class="tab-content">
-        <h3>Update Ferry Schedule</h3>
-        <!-- Form goes here, similar structure as Add Ferry -->
-    </div>
-
-    <input type="hidden" name="active_tab" value="addFerry">
-</div>
 <script>
-function showTab(tabId) {
-    const tabs = document.querySelectorAll('.tab-content');
-    const buttons = document.querySelectorAll('.tabs button');
-
-    tabs.forEach(tab => tab.classList.remove('active'));
-    buttons.forEach(button => button.classList.remove('active'));
-
-    document.getElementById(tabId).classList.add('active');
-    document.querySelector(`button[onclick="showTab('${tabId}')"]`).classList.add('active');
-    
-    // Update active tab
-    document.querySelector("input[name='active_tab']").value = tabId;
-}
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            window.location.href = 'admin_login.php';
+        }
+    }
 </script>
+<div class="container">
+    <h2>Manage Ferries</h2>
+
+    <?php if (isset($success_message)): ?>
+        <p class="success-message"><?php echo htmlspecialchars($success_message); ?></p>
+    <?php endif; ?>
+    <?php if (isset($error_message)): ?>
+        <p class="error-message"><?php echo htmlspecialchars($error_message); ?></p>
+    <?php endif; ?>
+
+<!-- Form to Add a Ferry -->
+<form method="POST" action="">
+    <h3>Add Ferry</h3>
+    <div class="input-group">
+        <input type="text" name="ferry_name" placeholder="Ferry Name" required>
+    </div>
+    <div class="input-group">
+        <input type="text" name="departure_port" placeholder="Departure Port" required>
+    </div>
+    <div class="input-group">
+        <input type="text" name="arrival_port" placeholder="Arrival Port" required>
+    </div>
+    <div class="input-group">
+        <label for="departure_time">Departure Time</label>
+        <input type="time" id="departure_time" name="departure_time" required>
+    </div>
+
+    <div class="input-group">
+        <label for="arrival_time">Arrival Time</label>
+        <input type="time" id="arrival_time" name="arrival_time" required>
+    </div>
+
+    <div class="input-group">
+        <select name="status" required>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+        </select>
+    </div>
+    <button type="submit" name="add_ferry" class="btn">Add Ferry</button>
+</form>
+
+<!-- Form to Add Accommodation and Price -->
+<form method="POST" action="">
+    <h3>Add Accommodation Type and Price</h3>
+    <div class="input-group">
+        <label for="ferry_name">Ferry Name</label>
+        <select name="ferry_name" required>
+            <option value="">Select Ferry</option>
+            <?php 
+            // Fetching ferries for the accommodation form
+            while ($row = $ferries->fetch_assoc()): ?>
+                <option value="<?php echo $row['ferry_name']; ?>"><?php echo $row['ferry_name']; ?></option>
+            <?php endwhile; ?>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="accom_type">Accommodation Type</label>
+        <select name="accom_type" required>
+            <option value="">Select Accommodation Type</option>
+            <?php 
+            // Fetching accommodation types for the dropdown
+            
+            while ($row = $accommodation_types->fetch_assoc()): ?>
+                <option value="<?php echo $row['accom_type']; ?>"><?php echo $row['accom_type']; ?></option>
+            <?php endwhile; ?>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="price">Price</label>
+        <input type="number" step="0.01" name="price" placeholder="Enter Price" required>
+    </div>
+
+    <div class="input-group">
+        <button type="submit" name="add_accommodation" class="btn">Add Accommodation</button>
+    </div>
+</form>
+
 </body>
 </html>
