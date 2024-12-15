@@ -11,15 +11,15 @@ if (!isset($_SESSION['admin_id'])) {
 $admin_id = $_SESSION['admin_id'];
 
 try {
-    // Fetch the admin's username securely
-    $stmt = $conn->prepare("SELECT username FROM Users WHERE user_id = ?");
+    // Fetch the admin's username and email securely
+    $stmt = $conn->prepare("SELECT username, email FROM Users WHERE user_id = ?");
     if (!$stmt) {
         throw new Exception("Database query preparation failed: " . $conn->error);
     }
 
     $stmt->bind_param("i", $admin_id);
     $stmt->execute();
-    $stmt->bind_result($admin_username);
+    $stmt->bind_result($admin_username, $admin_email);
 
     if (!$stmt->fetch()) {
         // Log error and redirect to login
@@ -42,421 +42,250 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Gabisan Shipping Lines</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/admin-dashboard.css">
-</head>
-<body>
-    <button class="hamburger-menu" id="sidebarToggle">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
+    <title>Customer Dashboard - Ferry E-Ticketing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1e40af;
+            --secondary-color: #3b82f6;
+            --accent-color: #60a5fa;
+            --background-color: #f0f9ff;
+        }
 
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-brand">GSL Admin</div>
-        <div class="admin-info">
-            Welcome, <strong><?php echo htmlspecialchars($admin_username); ?></strong>
-        </div>
-        <ul class="sidebar-menu">
-            <li><a href="javascript:void(0);" onclick="loadDashboard()">
-                <i class="fas fa-home"></i> <span>Dashboard</span>
-            </a></li>
-            <li><a href="javascript:void(0);" onclick="loadContent('schedule_and_rates')">
-                <i class="fas fa-ship"></i> <span>Schedule and Rates</span>
-            </a></li>
-            <li><a href="javascript:void(0);" onclick="loadContent('manage_users')">
-                <i class="fas fa-users"></i> <span>Manage Users</span>
-            </a></li>
-            <li><a href="javascript:void(0);" onclick="loadContent('view_reservation')">
-                <i class="fas fa-ticket-alt"></i> <span>View Bookings</span>
-            </a></li>
-            <li><a href="javascript:void(0);" onclick="loadContent('manage_ferry')">
-                <i class="fas fa-ship"></i> <span>Manage Ferry and Schedule</span>
-            </a></li>
-            <li><a href="javascript:void(0);" onclick="loadContent('reports')">
-                <i class="fas fa-chart-bar"></i> <span>Reports</span>
-            </a></li>
-        </ul>
-        <button class="logout-btn" onclick="confirmLogout()">
-            <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
-        </button>
-    </div>
+        body {
+            background: var(--background-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
 
-    <div class="main-content" id="mainContent">
-        <div class="dashboard-container">
-            <div class="dashboard-header">
-                <h1>Dashboard Overview</h1>
-                <p>Welcome to Gabisan Shipping Lines Inc. Administration Panel</p>
-            </div>
-            <div class="stats-grid" id="stats-section">
-                <div class="stat-card">
-                    <h3>Total Users</h3>
-                    <div class="value">150</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Active Bookings</h3>
-                    <div class="value">45</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Total Routes</h3>
-                    <div class="value">12</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Today's Revenue</h3>
-                    <div class="value">₱2,450</div>
-                </div>
-            </div>
-            <div id="dynamic-content">
-                <h2>Welcome to,</h2>
-                <div class="content-text">Gabisan Shipping Lines</div>
-            </div>
-        </div>
-    </div>
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
 
-    <script>
-        function confirmLogout() {
-            if (confirm('Are you sure you want to log out?')) {
-                window.location.href = 'admin_login.php';
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 1rem 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand img {
+            height: 50px;
+            object-fit: contain;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white !important;
+            transform: scale(1.05); /* Smooth scaling effect */
+        }
+
+        .welcome-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .user-avatar {
+            width: 100px;
+            height: 100px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 2.5rem;
+        }
+
+        .dashboard-grid {
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap to the next row if needed */
+            justify-content: space-between; /* Add even spacing between items */
+            gap: 1.5rem; /* Consistent spacing between cards */
+        }
+
+        .dashboard-card {
+            display: flex; /* Make the card a flex container */
+            flex-direction: column; /* Align items in a column */
+            justify-content: center; /* Center content vertically */
+            align-items: center; /* Center content horizontally */
+            flex: 1 1 calc(25% - 1.5rem); /* Take up 25% of the row minus gap space */
+            max-width: calc(25% - 1.5rem); /* Ensure consistent sizing */
+            box-sizing: border-box;
+            text-align: center; /* Center-align text */
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Add smooth transition */
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px) scale(1.05); /* Smooth hover scaling and translation */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); /* Add smooth shadow effect */
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--background-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            transition: transform 0.3s ease; /* Add smooth icon animation */
+        }
+
+        .dashboard-card:hover .card-icon {
+            transform: rotate(360deg); /* Add rotation effect on hover */
+        }
+
+        .card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-text {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-custom {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px) scale(1.05); /* Button hover scaling effect */
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-card {
+                flex: 1 1 calc(50% - 1.5rem); /* Adjust to two cards per row */
+                max-width: calc(50% - 1.5rem);
             }
         }
 
-        function loadContent(page) {
-    const dynamicContent = document.getElementById('dynamic-content');
-    const statsSection = document.getElementById('stats-section');
-    const dashboardHeader = document.querySelector('.dashboard-header'); // For the dashboard header
-
-    // Hide the stats section and dashboard header
-    statsSection.classList.add('hidden');
-    dashboardHeader.classList.add('hidden'); // Hide the dashboard overview
-
-    // Add PHP extension if missing
-    if (!page.endsWith('.php')) {
-        page += '.php';
-    }
-
-    // Dynamically load the content
-    fetch(page)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        @media (max-width: 576px) {
+            .dashboard-card {
+                flex: 1 1 100%; /* Stack cards in one column */
+                max-width: 100%;
             }
-            return response.text();
-        })
-        .then(data => {
-            dynamicContent.innerHTML = data;
-        })
-        .catch(error => {
-            dynamicContent.innerHTML = '<p>Error loading content. Please try again later.</p>';
-            console.error('Fetch Error:', error);
-        });
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <nav class="navbar navbar-expand-lg">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <img src="gabisan2.jpg" alt="Logo">
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="home.php"><i class="fas fa-home me-2"></i>Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="services.php"><i class="fas fa-ship me-2"></i>Services</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="contact.php"><i class="fas fa-envelope me-2"></i>Contact</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="news.php"><i class="fas fa-newspaper me-2"></i>News</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="signout.php"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
 
-    // Set active link style
-    document.querySelectorAll('.sidebar-menu a').forEach(link => {
-        link.classList.remove('active');
-    });
-    document.querySelector(`.sidebar-menu a[onclick="loadContent('${page}')"]`).classList.add('active');
-}
+        <div class="welcome-section">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <h2 class="mb-3">Welcome, <?php echo htmlspecialchars($admin_username); ?>!</h2>
+            <p class="text-muted"><?php echo htmlspecialchars($admin_email); ?></p>
+        </div>
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h3 class="card-title">Schedule & Rates</h3>
+                <p class="card-text">View ferry schedules and current ticket rates</p>
+                <button onclick="window.location.href='schedule_and_rates.php'" class="btn btn-custom">View Schedule</button>
+            </div>
 
-function loadDashboard() {
-    const dynamicContent = document.getElementById('dynamic-content');
-    const statsSection = document.getElementById('stats-section');
-    const dashboardHeader = document.querySelector('.dashboard-header'); // For the dashboard header
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <h3 class="card-title">Manage Users</h3>
+                <p class="card-text">Edit and Delete Users</p>
+                <button onclick="window.location.href='manage_users.php'" class="btn btn-custom">Manage Users</button>
+            </div>
 
-    // Show the stats section and dashboard header when returning to dashboard
-    statsSection.classList.remove('hidden');
-    dashboardHeader.classList.remove('hidden'); // Show the dashboard overview
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <h3 class="card-title">Bookings</h3>
+                <p class="card-text">View and manage your previous bookings</p>
+                <button onclick="window.location.href='view_reservation.php'" class="btn btn-custom">View Bookings</button>
+            </div>
 
-    // Load the dashboard content
-    dynamicContent.innerHTML = `
-        <h2>Welcome to, </h2>
-        <div class="content-text">Gabisan Shipping Lines</div>
-    `;
-}
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <h3 class="card-title">Manage Ferry and Schedules</h3>
+                <p class="card-text">Update and Delete Ferry Schedules</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button onclick="window.location.href='manage_ferry.php'" class="btn btn-custom">Manage Ferry and Schedules</button>
+                </div>
+            </div>
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <h3 class="card-title">Reports</h3>
+                <p class="card-text">View Reports</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button onclick="window.location.href='reports.php'" class="btn btn-custom">View Reports</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-                sidebarToggle.classList.toggle('active');
-                mainContent.classList.toggle('sidebar-active');
-            });
-
-            document.addEventListener('click', function(event) {
-                if (window.innerWidth <= 768 && 
-                    !sidebar.contains(event.target) && 
-                    !sidebarToggle.contains(event.target) && 
-                    sidebar.classList.contains('active')) {
-                    sidebar.classList.remove('active');
-                    sidebarToggle.classList.remove('active');
-                    mainContent.classList.remove('sidebar-active');
-                }
-            });
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-<style>
-:root {
-    --primary-color: #6c5ce7;
-    --secondary-color: #a29bfe;
-    --background-light: #ffffff;
-    --card-light: #f9f9f9;
-    --text-dark: #333333;
-    --text-gray: #b2bec3;
-    --purple-accent: #8b5cf6;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--background-light);
-    color: var(--text-dark);
-    display: flex;
-    min-height: 100vh;
-}
-
-.sidebar {
-    width: 280px;
-    background: var(--card-light);
-    position: fixed;
-    height: 100vh;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid rgba(0,0,0,0.1);
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-    z-index: 1000;
-}
-
-.sidebar.active {
-    transform: translateX(0);
-}
-
-.hamburger-menu {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1001;
-    background: var(--primary-color);
-    border: none;
-    color: var(--text-light);
-    padding: 0.5rem;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    transition: all 0.3s ease;
-}
-
-.hamburger-menu {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1001;
-    background: none; /* Remove background color */
-    border: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    transition: all 0.3s ease;
-}
-
-.hamburger-menu span {
-    display: block;
-    width: 25px;
-    height: 3px;
-    background: #000; /* Black color for the lines */
-    border-radius: 2px;
-    transition: all 0.3s ease;
-}
-
-.hamburger-menu.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-}
-
-.hamburger-menu.active span:nth-child(2) {
-    opacity: 0;
-}
-
-.hamburger-menu.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(5px, -5px);
-}
-
-.sidebar-brand {
-    font-size: 1.5rem;
-    font-weight: 700;
-    padding: 1rem 0;
-    text-align: center;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-    color: var(--text-dark);
-}
-
-.admin-info {
-    background: rgba(0,0,0,0.05);
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--text-dark);
-}
-
-.sidebar-menu {
-    list-style: none;
-    flex-grow: 1;
-}
-
-.sidebar-menu li {
-    margin-bottom: 0.5rem;
-}
-
-.sidebar-menu a {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    color: var(--text-dark);
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    gap: 0.75rem;
-}
-
-.sidebar-menu a:hover,
-.sidebar-menu a.active {
-    background: rgba(0,0,0,0.05);
-    transform: translateX(5px);
-}
-
-.logout-btn {
-    background: rgba(220,38,38,0.9);
-    color: white;
-    border: none;
-    padding: 0.75rem;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-}
-
-.logout-btn:hover {
-    background: rgb(220,38,38);
-    transform: translateY(-2px);
-}
-
-.main-content {
-    margin-left: 0;
-    flex-grow: 1;
-    padding: 2rem;
-    padding-top: 4rem;
-    transition: margin-left 0.3s ease-in-out;
-}
-
-.main-content.sidebar-active {
-    margin-left: 280px;
-}
-
-.dashboard-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.dashboard-header {
-    margin-bottom: 2rem;
-}
-
-.dashboard-header h1 {
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: var(--text-dark);
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background: var(--card-light);
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.2);
-}
-
-.stat-card h3 {
-    font-size: 0.875rem;
-    color: var(--text-gray);
-    margin-bottom: 0.5rem;
-}
-
-.stat-card .value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-#dynamic-content {
-    background: var(--card-light);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.content-text {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    text-align: center;
-    padding: 20px;
-    background-color: rgba(155, 135, 245, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-
-.content-text:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.2);
-}
-
-.hidden {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .main-content.sidebar-active {
-        margin-left: 0;
-    }
-    
-    .sidebar {
-        width: 100%;
-        max-width: 280px;
-    }
-}
-</style>

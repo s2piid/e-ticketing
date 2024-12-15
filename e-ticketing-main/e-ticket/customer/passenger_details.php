@@ -6,6 +6,14 @@ if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");
     exit();
 }
+// echo "<pre>";
+// print_r($_SESSION);
+// echo "</pre>";
+// Debugging: Check if session values are set correctly
+// echo "<pre>";
+// print_r($_SESSION['selected_accommodation']);
+// echo "</pre>";
+// exit(); // Stop execution here to check session
 // Ensure the session has necessary data
 if (!isset($_SESSION['departure']) || !isset($_SESSION['destination']) || !isset($_SESSION['departure_date']) || !isset($_SESSION['passengers'])) {
     echo "Session data is missing. Please go back and fill out the travel details.";
@@ -291,7 +299,7 @@ include 'header.php';
                     Next<i class="fas fa-arrow-right ms-2"></i>
                 </button>
                 <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
-                    Review Booking<i class="fas fa-check ms-2"></i>
+                    Proceed<i class="fas fa-check ms-2"></i>
                 </button>
             </div>
         </form>

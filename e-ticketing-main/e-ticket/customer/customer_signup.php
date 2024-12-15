@@ -16,8 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error_message = "Passwords do not match.";
     } elseif (!preg_match('/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/', $password)) {
         $error_message = "Password must be at least 8 characters long, include at least one letter, one number, and one special character.";
-    }
-     else {
+    } else {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
         // Check if username or email already exists
@@ -49,147 +48,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Customer Signup</title>
-<style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Signup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
 
-body {
-    background-color: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
+        .signup-container {
+            background: #ffffff;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
 
-.login-container {
-    background: #fff;
-    padding: 30px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    width: 300px;
-}
+        .signup-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
 
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
-}
+        .form-control {
+            margin-bottom: 15px;
+        }
 
-.input-group {
-    margin-bottom: 15px;
-    position: relative;
-}
+        .btn-signup {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
 
-input[type="text"],
-input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
+        .btn-signup:hover {
+            background: #0056b3;
+        }
 
-input:focus {
-    border-color: #007bff;
-}
+        .error-message {
+            color: #ff3333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
 
-.btn-login {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
+        .signup-container a {
+            color: #007bff;
+            text-decoration: none;
+        }
 
-.btn-login:hover {
-    background-color: #0056b3;
-}
-
-.error-message {
-    color: #ff3333;
-    font-size: 14px;
-    text-align: center;
-    margin-bottom: 10px;
-}
-body {
-    background: #f0f2f5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-}
-
-.login-container {
-    background: #fff;
-    padding: 30px;
-    width: 300px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #007bff;
-}
-
-input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    background: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #0056b3;
-}
-
-.error-message {
-    color: #ff3333;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-
-</style>
+        .signup-container a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
-
 <body>
-<div class="login-container">
+<div class="signup-container">
     <form id="signupForm" method="POST">
         <h2>Customer Signup</h2>
         <?php if (isset($error_message)): ?>
             <p class="error-message"><?php echo $error_message; ?></p>
         <?php endif; ?>
-        <input type="text" id="username" name="username" placeholder="Username" required>
-        <input type="email" id="email" name="email" placeholder="Email" required>
-        <input type="password" id="password" name="password" placeholder="Password" required>
-        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" required>
-        <input type="text" id="phone_num" name="phone_num" placeholder="Phone Number" required>
-        <button type="submit">Sign Up</button>
-        <p>Already have an account? <a href="customer_login.php">Login</a></p>
+        <div class="mb-3">
+            <input type="text" id="username" name="username" class="form-control" placeholder="Username" required>
+        </div>
+        <div class="mb-3">
+            <input type="email" id="email" name="email" class="form-control" placeholder="Email" required>
+        </div>
+        <div class="mb-3">
+            <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+        </div>
+        <div class="mb-3">
+            <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm Password" required>
+        </div>
+        <div class="mb-3">
+            <input type="text" id="phone_num" name="phone_num" class="form-control" placeholder="Phone Number" required>
+        </div>
+        <button type="submit" class="btn btn-signup">Sign Up</button>
+        <p class="mt-3 text-center">Already have an account? <a href="customer_login.php">Login</a></p>
     </form>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

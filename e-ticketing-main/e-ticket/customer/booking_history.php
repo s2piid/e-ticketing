@@ -36,6 +36,7 @@ $query->execute();
 $result = $query->get_result();
 
 // Page title
+include 'header.php';
 ?>
 
 <!DOCTYPE html>
@@ -174,3 +175,5 @@ $result = $query->get_result();
     </script>
 </body>
 </html>
+
+<?php include 'footer.php'; ?>

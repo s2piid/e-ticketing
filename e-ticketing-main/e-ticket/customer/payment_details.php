@@ -15,13 +15,13 @@ if (!isset($_SESSION['selected_ferry'], $_SESSION['selected_accommodation'], $_S
 
 // Get session data
 $selected_ferry_id = $_SESSION['selected_ferry'];
-$accom_id = $_SESSION['selected_accommodation'];
+$selected_accommodation = $_SESSION['selected_accommodation'];
 $passenger_details = $_SESSION['passenger_details'];
 $departure = $_SESSION['departure'];
 $destination = $_SESSION['destination'];
 $departure_date = $_SESSION['departure_date'];
 
-// Fetch ferry and accommodation details (same as in the review booking page)
+// Fetch ferry and accommodation details
 $query = $conn->prepare("
     SELECT ferries.ferry_name, accommodation.accom_type, accommodation_prices.price 
     FROM accommodation_prices
@@ -29,22 +29,21 @@ $query = $conn->prepare("
     INNER JOIN accommodation ON accommodation.accom_price_id = accommodation_prices.accom_id
     WHERE accommodation_prices.ferry_id = ? AND accommodation_prices.accom_id = ?
 ");
-$query->bind_param("ii", $selected_ferry_id, $accom_id);
+$query->bind_param("ii", $selected_ferry_id, $selected_accommodation['id']);
 $query->execute();
 $result = $query->get_result();
 
 $ferry_name = 'N/A';
-$selected_accommodation = null;
+$accom_type = 'N/A';
+$accom_price = 0;
 
 if ($row = $result->fetch_assoc()) {
     $ferry_name = $row['ferry_name'];
-    $selected_accommodation = [
-        'accom_type' => $row['accom_type'],
-        'price' => $row['price']
-    ];
+    $accom_type = $row['accom_type'];
+    $accom_price = $row['price'];
 }
 
-// Discount rates based on passenger type (same as in the review booking page)
+// Discount rates based on passenger type
 $discount_rates = [
     'regular' => 0,       // No discount
     'student' => 0.2,     // 20% discount
@@ -54,14 +53,17 @@ $discount_rates = [
     'infant' => 1         // Free (100% discount)
 ];
 
-// Calculate total cost (same as in the review booking page)
+// Calculate total cost
 $total_cost = 0;
 foreach ($passenger_details as $index => $passenger) {
-    $passenger_type = strtolower($passenger['passenger_type']);
-    $discount_rate = $discount_rates[$passenger_type] ?? 0;
-    $accom_price = $selected_accommodation['price'];
-    $discounted_fare = $accom_price * (1 - $discount_rate);
-    $total_cost += $discounted_fare;
+    if (is_array($passenger)) {
+        $passenger_type = strtolower($passenger['passenger_type']);
+        $discount_rate = $discount_rates[$passenger_type] ?? 0;
+        $discounted_fare = $accom_price * (1 - $discount_rate);
+        $total_cost += $discounted_fare;
+    } else {
+        $total_cost += $accom_price; // Default to no discount
+    }
 }
 
 // Page title
@@ -88,13 +90,13 @@ include 'header.php';
         <!-- Reference Number Form -->
         <div class="reference-form">
             <h4 class="text-primary mb-3">Enter GCash Reference Number</h4>
-            <form action="process_payment.php" method="POST">
+            <form id="paymentForm" action="process_payment.php" method="POST">
                 <div class="mb-3">
                     <label for="reference_number" class="form-label">Reference Number</label>
                     <input type="text" class="form-control" id="reference_number" name="reference_number" required>
                 </div>
                 <div class="mb-3">
-                    <button type="submit" class="btn btn-primary">Submit Reference Number</button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmPaymentModal">Submit Reference Number</button>
                 </div>
             </form>
         </div>
@@ -107,5 +109,24 @@ include 'header.php';
         </div>
     </div>
 </section>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmPaymentModal" tabindex="-1" aria-labelledby="confirmPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmPaymentModalLabel">Confirm Payment Submission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to submit this reference number for your payment?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('paymentForm').submit();">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php include 'footer.php'; ?>

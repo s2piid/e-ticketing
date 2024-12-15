@@ -7,41 +7,35 @@ if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");
     exit();
 }
-
-// Check if the necessary session variables are set
+// echo "<pre>";
+// print_r($_SESSION);
+// echo "</pre>";
 if (!isset($_SESSION['selected_ferry'], $_SESSION['selected_accommodation'], $_SESSION['passenger_details'], $_SESSION['departure'], $_SESSION['destination'], $_SESSION['departure_date'])) {
     die("Error: Booking details are missing. Please fill out the booking form and try again.");
 }
 
 // Get session data
 $selected_ferry_id = $_SESSION['selected_ferry'];
-$accom_id = $_SESSION['selected_accommodation'];
+$selected_accommodation = $_SESSION['selected_accommodation'];
 $passenger_details = $_SESSION['passenger_details'];
 $departure = $_SESSION['departure'];
 $destination = $_SESSION['destination'];
 $departure_date = $_SESSION['departure_date'];
 
-// Fetch ferry and accommodation details
+// Fetch ferry details
 $query = $conn->prepare("
-    SELECT ferries.ferry_name, accommodation.accom_type, accommodation_prices.price 
-    FROM accommodation_prices
-    INNER JOIN ferries ON ferries.ferry_id = accommodation_prices.ferry_id
-    INNER JOIN accommodation ON accommodation.accom_price_id = accommodation_prices.accom_id
-    WHERE accommodation_prices.ferry_id = ? AND accommodation_prices.accom_id = ?
+    SELECT ferries.ferry_name 
+    FROM ferries 
+    WHERE ferries.ferry_id = ?
 ");
-$query->bind_param("ii", $selected_ferry_id, $accom_id);
+$query->bind_param("i", $selected_ferry_id);
 $query->execute();
 $result = $query->get_result();
 
 $ferry_name = 'N/A';
-$selected_accommodation = null;
 
 if ($row = $result->fetch_assoc()) {
     $ferry_name = $row['ferry_name'];
-    $selected_accommodation = [
-        'accom_type' => $row['accom_type'],
-        'price' => $row['price']
-    ];
 }
 
 // Discount rates based on passenger type
@@ -83,7 +77,7 @@ include 'header.php';
                     <h4 class="text-primary mb-3">Accommodation Details</h4>
                     <?php if ($selected_accommodation): ?>
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="info-label"><?= htmlspecialchars($selected_accommodation['accom_type']) ?></span>
+                            <span class="info-label"><?= htmlspecialchars($selected_accommodation['type']) ?></span>
                             <span class="price-tag">₱<?= htmlspecialchars(number_format($selected_accommodation['price'], 2)) ?></span>
                         </div>
                     <?php else: ?>
@@ -97,33 +91,35 @@ include 'header.php';
         <h4 class="text-primary mb-4">Passenger Details</h4>
         <div class="row">
             <?php foreach ($passenger_details as $index => $passenger): ?>
-                <?php
-                $passenger_type = strtolower($passenger['passenger_type']);
-                $discount_rate = $discount_rates[$passenger_type] ?? 0;
-                $accom_price = $selected_accommodation['price'];
-                $discounted_fare = $accom_price * (1 - $discount_rate);
-                $total_cost += $discounted_fare;
-                ?>
-                <div class="col-md-6 mb-4">
-                    <div class="passenger-card p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Passenger <?= $index + 1 ?></h5>
-                            <span class="discount-badge"><?= ucfirst(htmlspecialchars($passenger['passenger_type'])) ?></span>
-                        </div>
-                        <div class="passenger-info">
-                            <p><span class="info-label">Name:</span> <?= htmlspecialchars($passenger['first_name']) ?> <?= htmlspecialchars($passenger['middle_name'] ?? '') ?> <?= htmlspecialchars($passenger['last_name']) ?></p>
-                            <p><span class="info-label">Gender:</span> <?= htmlspecialchars($passenger['gender']) ?></p>
-                            <p><span class="info-label">Birth Date:</span> <?= htmlspecialchars($passenger['birth_date']) ?></p>
-                            <p><span class="info-label">Nationality:</span> <?= htmlspecialchars($passenger['nationality']) ?></p>
-                            <hr>
-                            <div class="fare-details bg-light p-2 rounded">
-                                <p class="mb-1"><span class="info-label">Discount:</span> <span class="text-danger"><?= ($discount_rate * 100) ?>%</span></p>
-                                <p class="mb-0"><span class="info-label">Final Fare:</span> <span class="text-success fw-bold">₱<?= number_format($discounted_fare, 2) ?></span></p>
-                            </div>
-                        </div>
-                    </div>
+    <?php
+    $passenger_type = strtolower($passenger['passenger_type']);
+    $discount_rate = $discount_rates[$passenger_type] ?? 0;
+    $accom_price = $selected_accommodation['price'] ?? 0; // Default to 0 if not set
+    $discounted_fare = $accom_price * (1 - $discount_rate);
+    $total_cost += $discounted_fare;
+    ?>
+    <div class="col-md-6 mb-4">
+            <div class="passenger-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Passenger <?= $index + 1 ?></h5>
+                    <span class="discount-badge"><?= ucfirst(htmlspecialchars($passenger['passenger_type'])) ?></span>
                 </div>
-            <?php endforeach; ?>
+                <div class="passenger-info">
+                    <p><span class="info-label">Name:</span> <?= htmlspecialchars($passenger['first_name']) ?> <?= htmlspecialchars($passenger['middle_name'] ?? '') ?> <?= htmlspecialchars($passenger['last_name']) ?></p>
+                    <p><span class="info-label">Gender:</span> <?= htmlspecialchars($passenger['gender']) ?></p>
+                    <p><span class="info-label">Birth Date:</span> <?= htmlspecialchars($passenger['birth_date']) ?></p>
+                    <p><span class="info-label">Civil Status:</span> <?= htmlspecialchars($passenger['civil_status'] ?? 'N/A') ?></p>
+                    <p><span class="info-label">Nationality:</span> <?= htmlspecialchars($passenger['nationality']) ?></p>
+                    <p><span class="info-label">Address:</span> <?= htmlspecialchars($passenger['address']) ?></p>
+                    <hr>
+                    <div class="fare-details bg-light p-2 rounded">
+                        <p class="mb-1"><span class="info-label">Discount:</span> <span class="text-danger"><?= ($discount_rate * 100) ?>%</span></p>
+                        <p class="mb-0"><span class="info-label">Final Fare:</span> <span class="text-success fw-bold">₱<?= number_format($discounted_fare, 2) ?></span></p>
+                    </div>
+            </div>
+        </div>
+    </div>
+<?php endforeach; ?>
         </div>
 
         <!-- Total Cost -->

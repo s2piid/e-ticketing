@@ -20,28 +20,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validate ferry and accommodation selection
     $stmt = $conn->prepare("
-        SELECT COUNT(*) AS valid_count
-        FROM ferry_schedule fs
-        LEFT JOIN accommodation_prices ap ON fs.ferry_id = ap.ferry_id
-        WHERE fs.ferry_id = ? AND ap.accom_id = ?
-    ");
-    $stmt->bind_param("ii", $ferry_id, $accom_id); // Use integer for binding
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    SELECT COUNT(*) AS valid_count, ap.price, a.accom_type
+    FROM ferry_schedule fs
+    LEFT JOIN accommodation_prices ap ON fs.ferry_id = ap.ferry_id
+    LEFT JOIN accommodation a ON ap.accom_id = a.accom_price_id
+    WHERE fs.ferry_id = ? AND ap.accom_id = ?
+");
+$stmt->bind_param("ii", $ferry_id, $accom_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
 
-    if ($row['valid_count'] === 0) {
-        echo "<div class='alert alert-danger text-center mt-4'>Invalid selection. Please try again.</div>";
-        exit();
-    }
+if ($row['valid_count'] === 0) {
+    echo "<div class='alert alert-danger text-center mt-4'>Invalid selection. Please try again.</div>";
+    exit();
+}
 
-    // Store selected ferry and accommodation in session
-    $_SESSION['selected_ferry'] = $ferry_id;
-    $_SESSION['selected_accommodation'] = $accom_id;
-
-    // // Debugging: Check if session values are set correctly
-    // var_dump($_SESSION);
-    // // exit(); // Stop execution here to check session
+// Save the selected ferry and accommodation in the session
+$_SESSION['selected_ferry'] = $ferry_id; // Add this line
+$_SESSION['selected_accommodation'] = [
+    'id' => $accom_id,
+    'price' => $row['price'],
+    'type' => $row['accom_type'] // Include accommodation type
+];
 
     // Redirect to passenger details page
     header("Location: passenger_details.php");

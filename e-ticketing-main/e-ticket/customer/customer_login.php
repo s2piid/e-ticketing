@@ -40,158 +40,149 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error_message = "Invalid user type.";
             }
-            
-    } else {
-        $error_message = "Invalid username or user not found.";
+        } else {
+            $error_message = "Invalid username or password.";
+        }
     }
 
     // Close the statement and connection
     $stmt->close();
     $conn->close();
-    }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Customer Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .left-side {
+            padding: 30px;
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .right-side {
+            width: 50%;
+            background: linear-gradient(to right, #89f7fe, #66a6ff);
+            color: #fff;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .left-side h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .social-login {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .social-login a {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f2f5;
+            color: #555;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+
+        .social-login a:hover {
+            background: #ddd;
+        }
+
+        .form-control {
+            margin-bottom: 15px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #0056b3;
+        }
+
+        .error-message {
+            color: #ff3333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .right-side h2 {
+            margin-bottom: 20px;
+        }
+
+        .right-side p {
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <style>
-        * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-}
-
-body {
-    background-color: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-.login-container {
-    background: #fff;
-    padding: 30px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    width: 300px;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.input-group {
-    margin-bottom: 15px;
-    position: relative;
-}
-
-input[type="text"],
-input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-input:focus {
-    border-color: #007bff;
-}
-
-.btn-login {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.btn-login:hover {
-    background-color: #0056b3;
-}
-
-.error-message {
-    color: #ff3333;
-    font-size: 14px;
-    text-align: center;
-    margin-bottom: 10px;
-}
-body {
-    background: #f0f2f5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-}
-
-.login-container {
-    background: #fff;
-    padding: 30px;
-    width: 300px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #007bff;
-}
-
-input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    background: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #0056b3;
-}
-
-.error-message {
-    color: #ff3333;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-
-    </style>
-<div class="login-container">
-    <form id="loginForm" method="POST">
-        <h2>Customer Login</h2>
-        <?php if (isset($error_message)): ?>
-            <p class="error-message"><?php echo $error_message; ?></p>
-        <?php endif; ?>
-        <input type="text" id="username" name="username" placeholder="Username" required>
-        <input type="password" id="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
-        <p>Don't have an account? 
-            <a href="customer_signup.php">Sign Up</a></p>
-    </form>
+<div class="container">
+    <div class="left-side">
+        <h2>Login</h2>
+        <form id="loginForm" method="POST">
+            <div class="social-login">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+            </div>
+            <input type="text" id="username" name="username" class="form-control" placeholder="Username" required>
+            <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+            <button type="submit" class="btn btn-login">Login</button>
+            <p class="error-message"><?php if (isset($error_message)) echo $error_message; ?></p>
+            <p>Don't have an account? <a href="customer_signup.php">Sign Up</a></p>
+        </form>
+    </div>
+    <div class="right-side">
+        <h2>Welcome to Gabisan Shipping Line!!</h2>
+        <p>Login to access your account and manage your bookings.</p>
+    </div>
 </div>
+<script src="https://kit.fontawesome.com/a076d05399.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

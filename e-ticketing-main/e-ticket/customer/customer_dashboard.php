@@ -68,6 +68,7 @@ $stmt->close();
         .nav-link:hover {
             background: rgba(255, 255, 255, 0.1);
             color: white !important;
+            transform: scale(1.05); /* Smooth scaling effect */
         }
 
         .welcome-section {
@@ -93,25 +94,27 @@ $stmt->close();
         }
 
         .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap to the next row if needed */
+            justify-content: space-between; /* Add even spacing between items */
+            gap: 1.5rem; /* Consistent spacing between cards */
         }
 
         .dashboard-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex; /* Make the card a flex container */
+            flex-direction: column; /* Align items in a column */
+            justify-content: center; /* Center content vertically */
+            align-items: center; /* Center content horizontally */
+            flex: 1 1 calc(25% - 1.5rem); /* Take up 25% of the row minus gap space */
+            max-width: calc(25% - 1.5rem); /* Ensure consistent sizing */
+            box-sizing: border-box;
+            text-align: center; /* Center-align text */
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Add smooth transition */
         }
 
         .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px) scale(1.05); /* Smooth hover scaling and translation */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); /* Add smooth shadow effect */
         }
 
         .card-icon {
@@ -125,6 +128,11 @@ $stmt->close();
             margin: 0 auto 1rem;
             color: var(--primary-color);
             font-size: 1.5rem;
+            transition: transform 0.3s ease; /* Add smooth icon animation */
+        }
+
+        .dashboard-card:hover .card-icon {
+            transform: rotate(360deg); /* Add rotation effect on hover */
         }
 
         .card-title {
@@ -150,15 +158,20 @@ $stmt->close();
 
         .btn-custom:hover {
             background: var(--secondary-color);
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.05); /* Button hover scaling effect */
         }
 
         @media (max-width: 768px) {
-            .navbar-nav {
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 0.5rem;
-                padding: 1rem;
-                margin-top: 1rem;
+            .dashboard-card {
+                flex: 1 1 calc(50% - 1.5rem); /* Adjust to two cards per row */
+                max-width: calc(50% - 1.5rem);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .dashboard-card {
+                flex: 1 1 100%; /* Stack cards in one column */
+                max-width: 100%;
             }
         }
     </style>
@@ -228,7 +241,7 @@ $stmt->close();
                 </div>
                 <h3 class="card-title">Booking History</h3>
                 <p class="card-text">View and manage your previous bookings</p>
-                <button onclick="window.location.href='book_history.php'" class="btn btn-custom">View History</button>
+                <button onclick="window.location.href='booking_history.php'" class="btn btn-custom">View History</button>
             </div>
 
             <div class="dashboard-card">
@@ -238,8 +251,7 @@ $stmt->close();
                 <h3 class="card-title">Profile Settings</h3>
                 <p class="card-text">Update your profile information and password</p>
                 <div class="d-flex gap-2 justify-content-center">
-                    <button onclick="window.location.href='update_pro.php'" class="btn btn-custom">Update Profile</button>
-                    <button onclick="window.location.href='change_pass.php'" class="btn btn-custom">Change Password</button>
+                    <button onclick="window.location.href='update_profile.php'" class="btn btn-custom">Update Profile</button>
                 </div>
             </div>
         </div>

@@ -1,6 +1,7 @@
 <?php
 // Include your database connection
 include('C:/xampp/htdocs/e-ticketing-main/e-ticket/config.php');
+include 'header.php';
 // Fetch ferry schedules and join with accommodations and prices
 $query = "
     SELECT 
@@ -160,4 +161,4 @@ if ($result->num_rows > 0) {
 
 // Close the database connection
 $conn->close();
-?>
+include 'footer.php'; ?>

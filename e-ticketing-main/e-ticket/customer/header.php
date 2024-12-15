@@ -279,26 +279,7 @@ if (!isset($step)) {
             <h1><i class="fas fa-ship me-2"></i>Ferry E-Ticketing</h1>
             <p>Experience seamless journey booking with our modern platform</p>
         </header>
-        <nav class="step-indicator">
-            <?php
-            $steps = [
-                1 => ['icon' => 'fa-calendar-alt', 'text' => 'Travel Details'],
-                2 => ['icon' => 'fa-ship', 'text' => 'Ferry Selection'],
-                3 => ['icon' => 'fa-users', 'text' => 'Passenger Details'],
-                4 => ['icon' => 'fa-clipboard-check', 'text' => 'Review Booking'],
-                5 => ['icon' => 'fa-credit-card', 'text' => 'Payment']
-            ];
-            
-            foreach ($steps as $stepNum => $stepInfo): ?>
-                <div class="step <?= $step >= $stepNum ? 'active' : '' ?>">
-                    <div class="step-number">
-                        <i class="fas <?= $stepInfo['icon'] ?>"></i>
-                    </div>
-                    <div><?= $stepInfo['text'] ?></div>
-                </div>
-            <?php endforeach; ?>
-        </nav>
-
+        
         <!-- Loading animation div -->
         <div class="loading" style="display: none;"></div>
 
