@@ -90,7 +90,7 @@ include 'header.php';
         <!-- Passenger Details -->
         <h4 class="text-primary mb-4">Passenger Details</h4>
         <div class="row">
-            <?php foreach ($passenger_details as $index => $passenger): ?>
+        <?php foreach ($passenger_details as $index => $passenger): ?>
     <?php
     $passenger_type = strtolower($passenger['passenger_type']);
     $discount_rate = $discount_rates[$passenger_type] ?? 0;
@@ -99,23 +99,33 @@ include 'header.php';
     $total_cost += $discounted_fare;
     ?>
     <div class="col-md-6 mb-4">
-            <div class="passenger-card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Passenger <?= $index + 1 ?></h5>
-                    <span class="discount-badge"><?= ucfirst(htmlspecialchars($passenger['passenger_type'])) ?></span>
+        <div class="passenger-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Passenger <?= $index + 1 ?></h5>
+                <span class="discount-badge"><?= ucfirst(htmlspecialchars($passenger['passenger_type'])) ?></span>
+            </div>
+            <div class="passenger-info">
+                <p><span class="info-label">Name:</span> <?= htmlspecialchars($passenger['first_name']) ?> <?= htmlspecialchars($passenger['middle_name'] ?? '') ?> <?= htmlspecialchars($passenger['last_name']) ?></p>
+                <p><span class="info-label">Gender:</span> <?= htmlspecialchars($passenger['gender']) ?></p>
+                <p><span class="info-label">Birth Date:</span> <?= htmlspecialchars($passenger['birth_date']) ?></p>
+                <p><span class="info-label">Civil Status:</span> <?= htmlspecialchars($passenger['civil_status'] ?? 'N/A') ?></p>
+                <p><span class="info-label">Nationality:</span> <?= htmlspecialchars($passenger['nationality']) ?></p>
+                <p><span class="info-label">Address:</span> <?= htmlspecialchars($passenger['address']) ?></p>
+                
+                <!-- Display Uploaded File -->
+                <!-- <?php if (isset($passenger['id_file']) && $passenger['id_file']): ?>
+                    <p><span class="info-label">Uploaded File:</span> 
+                        <a href="uploads/<?= htmlspecialchars($passenger['id_file']) ?>" target="_blank">Download</a>
+                    </p>
+                <?php else: ?>
+                    <p><span class="info-label">Uploaded File:</span> No file uploaded.</p>
+                <?php endif; ?> -->
+
+                <hr>
+                <div class="fare-details bg-light p-2 rounded">
+                    <p class="mb-1"><span class="info-label">Discount:</span> <span class="text-danger"><?= ($discount_rate * 100) ?>%</span></p>
+                    <p class="mb-0"><span class="info-label">Final Fare:</span> <span class="text-success fw-bold">₱<?= number_format($discounted_fare, 2) ?></span></p>
                 </div>
-                <div class="passenger-info">
-                    <p><span class="info-label">Name:</span> <?= htmlspecialchars($passenger['first_name']) ?> <?= htmlspecialchars($passenger['middle_name'] ?? '') ?> <?= htmlspecialchars($passenger['last_name']) ?></p>
-                    <p><span class="info-label">Gender:</span> <?= htmlspecialchars($passenger['gender']) ?></p>
-                    <p><span class="info-label">Birth Date:</span> <?= htmlspecialchars($passenger['birth_date']) ?></p>
-                    <p><span class="info-label">Civil Status:</span> <?= htmlspecialchars($passenger['civil_status'] ?? 'N/A') ?></p>
-                    <p><span class="info-label">Nationality:</span> <?= htmlspecialchars($passenger['nationality']) ?></p>
-                    <p><span class="info-label">Address:</span> <?= htmlspecialchars($passenger['address']) ?></p>
-                    <hr>
-                    <div class="fare-details bg-light p-2 rounded">
-                        <p class="mb-1"><span class="info-label">Discount:</span> <span class="text-danger"><?= ($discount_rate * 100) ?>%</span></p>
-                        <p class="mb-0"><span class="info-label">Final Fare:</span> <span class="text-success fw-bold">₱<?= number_format($discounted_fare, 2) ?></span></p>
-                    </div>
             </div>
         </div>
     </div>

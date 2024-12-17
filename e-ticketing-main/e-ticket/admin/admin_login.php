@@ -21,10 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($stmt->num_rows > 0) {
         $stmt->bind_result($user_id, $password_hash);
         $stmt->fetch();
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
         // Verify the password using password_verify
         if (password_verify($password, $password_hash)) {
-            // Password is correct, start admin session
             $_SESSION['admin_id'] = $user_id;
             header("Location: admin_dashboard.php");
             exit();
@@ -35,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error_message = "Invalid username or role.";
     }
 
-    // Close the statement and connection
     $stmt->close();
     $conn->close();
 }
@@ -46,130 +43,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Login</title>
-<script src="script.js"></script>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        background: linear-gradient(to right, #6a11cb, #2575fc);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+    }
+
+    .login-container {
+        background: #fff;
+        padding: 30px;
+        width: 350px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+        position: relative;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    input:focus {
+        border-color: #6a11cb;
+        outline: none;
+        box-shadow: 0 0 5px rgba(106, 17, 203, 0.5);
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        background: #6a11cb;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+
+    .btn-login:hover {
+        background: #4e0fba;
+    }
+
+    .error-message {
+        color: #ff4d4d;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .signup-link {
+        margin-top: 15px;
+        font-size: 14px;
+    }
+
+    .signup-link a {
+        color: #6a11cb;
+        text-decoration: none;
+    }
+
+    .signup-link a:hover {
+        text-decoration: underline;
+    }
+</style>
 </head>
 <body>
-    <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-}
-
-body {
-    background-color: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-.login-container {
-    background: #fff;
-    padding: 30px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    width: 300px;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.input-group {
-    margin-bottom: 15px;
-    position: relative;
-}
-
-input[type="text"],
-input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-input:focus {
-    border-color: #007bff;
-}
-
-.btn-login {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.btn-login:hover {
-    background-color: #0056b3;
-}
-
-.error-message {
-    color: #ff3333;
-    font-size: 14px;
-    text-align: center;
-    margin-bottom: 10px;
-}
-body {
-    background: #f0f2f5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-}
-
-.login-container {
-    background: #fff;
-    padding: 30px;
-    width: 300px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #007bff;
-}
-
-input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    background: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #0056b3;
-}
-
-.error-message {
-    color: #ff3333;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-
-    </style>
 <div class="login-container">
     <form id="loginForm" action="" method="POST">
         <h2>Admin Login</h2>
@@ -182,14 +144,10 @@ button:hover {
         <div class="input-group">
             <input type="password" id="password" name="password" placeholder="Password" required>
         </div>
-        <div>
-            <button type="submit" class="btn-login">Login</button>
+        <button type="submit" class="btn-login">Login</button>
+        <div class="signup-link">
+            <p>Don’t have an account? <a href="admin_signup.php">Sign Up</a></p>
         </div>
-        <br>
-        <div>
-            <button type ="submit" href="admin_signup.php">Sign Up</a>
-        </div>
-        
     </form>
 </div>
 </body>

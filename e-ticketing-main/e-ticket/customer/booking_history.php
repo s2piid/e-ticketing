@@ -115,8 +115,10 @@ include 'header.php';
             <td><?= htmlspecialchars($row['reference_number']) ?></td>
             <td>
     <?php if ($row['status'] === 'confirmed'): ?>
-        <!-- Show the download link for confirmed tickets -->
-        <a href="download_ticket.php?booking_id=<?= htmlspecialchars($row['booking_id']) ?>" class="btn btn-success btn-sm">Download Ticket</a>
+        <!-- Show the modal trigger button for confirmed tickets -->
+        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#viewTicketModal" data-booking-id="<?= htmlspecialchars($row['booking_id']) ?>">
+            View Ticket
+        </button>
     <?php elseif ($row['status'] !== 'cancelled'): ?>
         <!-- Show the cancel button if the booking is not confirmed or cancelled -->
         <button class="btn btn-danger btn-sm" 
@@ -130,11 +132,32 @@ include 'header.php';
     <?php else: ?>
         <span class="text-muted">Cancelled</span>
     <?php endif; ?>
-</td>
+    </td>
         </tr>
     <?php endwhile; ?>
 </tbody>
     </table>
+
+    <!-- View Ticket Modal -->
+    <div class="modal fade" id="viewTicketModal" tabindex="-1" role="dialog" aria-labelledby="viewTicketModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewTicketModalLabel">Ticket Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="ticketDetailsContent">
+                    <!-- Ticket details will be loaded here via AJAX -->
+                </div>
+                <div class="modal-footer">
+                    <a href="" id="downloadTicketLink" class="btn btn-success" download>Download Ticket</a>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Confirmation Modal -->
     <div class="modal fade" id="confirmCancelModal" tabindex="-1" role="dialog" aria-labelledby="confirmCancelModalLabel" aria-hidden="true">
@@ -159,16 +182,33 @@ include 'header.php';
             </div>
         </div>
     </div>
+    
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script>
+        // AJAX to load ticket details into the modal
+        $('#viewTicketModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); 
+            var bookingID = button.data('booking-id'); 
+
+            var modal = $(this);
+            
+            $.ajax({
+                url: 'fetch_ticket_details.php',
+                type: 'GET',
+                data: { booking_id: bookingID },
+                success: function(response) {
+                    modal.find('#ticketDetailsContent').html(response);
+                    modal.find('#downloadTicketLink').attr('href', 'download_ticket.php?booking_id=' + bookingID);
+                }
+            });
+        });
+
+        // Set the booking ID for cancellation
         $('#confirmCancelModal').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget); 
             var bookingID = button.data('booking-id');
-            var departure = button.data('departure');
-            var destination = button.data('destination');
-
             var modal = $(this);
             modal.find('#confirmCancelBookingID').val(bookingID);
         });

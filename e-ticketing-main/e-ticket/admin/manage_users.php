@@ -1,6 +1,7 @@
 <?php
 session_start();
 include('C:/xampp/htdocs/e-ticketing-main/e-ticket/config.php');
+include 'header.php';
 
 // Check if the admin is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -8,27 +9,18 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
-// Handle user actions (edit/delete)
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
-    $user_id = $_POST['user_id'];
-    $action = $_POST['action'];
-
-    if ($action == 'edit') {
-        // Redirect to the user edit page
-        header("Location: edit_user.php?user_id=" . $user_id);
-        exit();
-    } elseif ($action == 'delete') {
-        // Handle delete action (permanent delete or soft delete)
-        $delete_query = "UPDATE users SET deleted_at = NOW() WHERE user_id = ?";
-        if ($stmt = $conn->prepare($delete_query)) {
-            $stmt->bind_param('i', $user_id);
-            if ($stmt->execute()) {
-                $success_message = "User has been deleted.";
-            } else {
-                $error_message = "Error deleting user.";
-            }
-            $stmt->close();
+// Handle delete action securely using GET parameter
+if (isset($_GET['delete_id'])) {
+    $user_id = $_GET['delete_id'];
+    $delete_query = "UPDATE users SET deleted_at = NOW() WHERE user_id = ?";
+    if ($stmt = $conn->prepare($delete_query)) {
+        $stmt->bind_param('i', $user_id);
+        if ($stmt->execute()) {
+            $success_message = "User has been deleted.";
+        } else {
+            $error_message = "Error deleting user.";
         }
+        $stmt->close();
     }
 }
 
@@ -51,211 +43,187 @@ $query = "
         user_id ASC";
 $result = $conn->query($query);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users</title>
-    <link rel="stylesheet" href="C:/xampp/htdocs/e-ticket/style.css">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        /* Root Variables */
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --light-color: #f0f2f5;
-            --background-color: #fff;
-            --text-dark: #333;
-            --hover-bg: #f8f9fa;
-            --border-color: #dee2e6;
-        }
-
-        /* General Body Styling */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--light-color);
-            margin: 0;
-            padding: 0;
-            color: var(--text-dark);
-            display: flex;
-            min-height: 100vh;
-            flex-direction: column;
-        }
-
-        /* Container Styling */
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 30px;
-            background-color: var(--background-color);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            flex-grow: 1;
-        }
-
-        /* Header Styling */
-        h2 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 30px;
-            font-size: 28px;
-            letter-spacing: 1px;
-        }
-
-        /* Success and Error Messages */
-        .success-message {
-            color: #155724;
-            background-color: #d4edda;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #c3e6cb;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .error-message {
-            color: #721c24;
-            background-color: #f8d7da;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #f5c6cb;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        /* Table Styling */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        table th, table td {
-            padding: 15px;
-            border: 1px solid var(--border-color);
-            text-align: left;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-
-        table th {
-            background-color: #e9ecef;
-            color: var(--text-dark);
-            font-weight: bold;
-        }
-
-        table tbody tr:nth-child(even) {
-            background-color: var(--hover-bg);
-        }
-
-        table tbody tr:hover {
-            background-color: var(--secondary-color);
-            color: #fff;
-        }
-
-        /* Icon Styling */
-        .btn-action i {
-            font-size: 18px;
-        }
-
-        .btn-action {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-edit {
-            background-color: #ffc107;
-            color: #fff;
-        }
-
-        .btn-delete {
-            background-color: #dc3545;
-            color: #fff;
-        }
-
-        .btn-edit:hover {
-            background-color: #e0a800;
-            transform: translateY(-2px);
-        }
-
-        .btn-delete:hover {
-            background-color: #c82333;
-            transform: translateY(-2px);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                width: 100%;
-                padding: 15px;
-            }
-
-            h2 {
-                font-size: 24px;
-            }
-
-            table th, table td {
-                font-size: 14px;
-            }
-        }
-    </style>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Manage Users</title>
+<link href='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css' rel='stylesheet'>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+        text-align: center;
+        margin: 20px 0;
+    }
+    .back-button a {
+        text-decoration: none;
+        font-size: 18px;
+        color: white;
+        background-color: #007BFF;
+        padding: 12px 20px;
+        border-radius: 8px;
+        transition: background-color 0.3s;
+        display: inline-block;
+        margin-top: 20px;
+        text-align: center;
+    }
+    .back-button a:hover {
+        background-color: #0056b3;
+    }
+    table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: center;
+    }
+    th {
+        background-color: #007BFF;
+        color: white;
+    }
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+    tr:hover {
+        background-color: #ddd;
+    }
+    .action-buttons a {
+        text-decoration: none;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        margin: 0 5px;
+    }
+    .edit-btn {
+        background-color: #28a745;
+    }
+    .edit-btn:hover {
+        background-color: #218838;
+    }
+    .delete-btn {
+        background-color: #dc3545;
+    }
+    .delete-btn:hover {
+        background-color: #c82333;
+    }
+    .pagination a {
+        padding: 8px 15px;
+        margin: 0 8px;
+        border: 1px solid #ddd;
+        color: #007BFF;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+    .pagination a:hover {
+        background-color: #f2f2f2;
+    }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h2>Manage Users</h2>
 
-        <?php if (isset($success_message)): ?>
-            <p class="success-message"><?php echo htmlspecialchars($success_message); ?></p>
-        <?php endif; ?>
-        <?php if (isset($error_message)): ?>
-            <p class="error-message"><?php echo htmlspecialchars($error_message); ?></p>
-        <?php endif; ?>
+<div class="container">
+    <h2 class="header">Manage Users</h2>
 
-        <table>
-            <thead>
+    <?php if (isset($success_message)): ?>
+        <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+    <?php endif; ?>
+    <?php if (isset($error_message)): ?>
+        <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
+    <?php endif; ?>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Created At</th>
+                <th>Updated At</th>
+                <th>Deleted At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while ($row = $result->fetch_assoc()): ?>
                 <tr>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Phone Number</th>
-                    <th>Created At</th>
-                    <th>Updated At</th>
-                    <th>Deleted At</th>
-                    <th>Actions</th>
+                    <td><?php echo htmlspecialchars($row['username']); ?></td>
+                    <td><?php echo htmlspecialchars($row['email']); ?></td>
+                    <td><?php echo htmlspecialchars($row['phone_num']); ?></td>
+                    <td><?php echo htmlspecialchars($row['created_at']); ?></td>
+                    <td><?php echo htmlspecialchars($row['updated_at']); ?></td>
+                    <td><?php echo htmlspecialchars($row['deleted_at']); ?></td>
+                    <td class="action-buttons">
+                        <a href="edit_user.php?user_id=<?php echo $row['user_id']; ?>" class="edit-btn">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="#" class="delete-btn" data-toggle="modal" data-target="#deleteModal" data-id="<?php echo $row['user_id']; ?>">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </a>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['username']); ?></td>
-                        <td><?php echo htmlspecialchars($row['email']); ?></td>
-                        <td><?php echo htmlspecialchars($row['phone_num']); ?></td>
-                        <td><?php echo htmlspecialchars($row['created_at']); ?></td>
-                        <td><?php echo htmlspecialchars($row['updated_at']); ?></td>
-                        <td><?php echo htmlspecialchars($row['deleted_at']); ?></td>
-                        <td>
-                            <form method="post" style="display:inline-block;">
-                                <input type="hidden" name="user_id" value="<?php echo $row['user_id']; ?>">
-                                <button type="submit" name="action" value="edit" class="btn-action btn-edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="submit" name="action" value="delete" class="btn-action btn-delete">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+
+    <div class="back-button">
+        <a href="admin_dashboard.php">Back</a>
     </div>
+
+</div>
+
+<!-- Modal for confirmation -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Delete User</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete this user? This action cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmDelete" class="btn btn-danger">Delete</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    // Capture the data-id attribute and set it for the confirmation link
+    $('#deleteModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); 
+        var userId = button.data('id'); 
+        var modal = $(this);
+        modal.find('#confirmDelete').attr('href', 'delete_user.php?user_id=' + userId);
+    });
+</script>
+
 </body>
 </html>
+
+<?php include 'footer.php'; ?>

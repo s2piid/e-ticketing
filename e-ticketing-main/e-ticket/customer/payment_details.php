@@ -1,7 +1,9 @@
 <?php
 session_start();
 include('C:/xampp/htdocs/e-ticketing-main/e-ticket/config.php');
-
+// echo "<pre>";
+// print_r($_SESSION);
+// echo "</pre>";
 // Check if the user is logged in
 if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");
@@ -87,26 +89,22 @@ include 'header.php';
             <p class="text-muted">Once you have completed the payment, please enter the reference number below.</p>
         </div>
 
-        <!-- Reference Number Form -->
-        <div class="reference-form">
-            <h4 class="text-primary mb-3">Enter GCash Reference Number</h4>
-            <form id="paymentForm" action="process_payment.php" method="POST">
-                <div class="mb-3">
-                    <label for="reference_number" class="form-label">Reference Number</label>
-                    <input type="text" class="form-control" id="reference_number" name="reference_number" required>
-                </div>
-                <div class="mb-3">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmPaymentModal">Submit Reference Number</button>
-                </div>
-            </form>
+        <form id="paymentForm" action="process_payment.php" method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="reference_number" class="form-label">Reference Number</label>
+        <input type="text" class="form-control" id="reference_number" name="reference_number" required>
+    </div>
+    <!-- <?php foreach ($passenger_details as $index => $passenger): ?>
+        <div class="mb-3">
+            <label for="id_photo_<?= $index ?>" class="form-label">Upload ID for <?= htmlspecialchars($passenger['first_name'] . ' ' . $passenger['last_name']) ?></label>
+            <input type="file" class="form-control" id="id_photo_<?= $index ?>" name="id_photo_<?= $index ?>" required>
         </div>
+    <?php endforeach; ?> -->
+    <div class="mb-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmPaymentModal">Submit Reference Number</button>
+    </div>
+</form>
 
-        <!-- Navigation -->
-        <div class="d-flex justify-content-between mt-4 action-buttons">
-            <a href="review_booking.php" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Review
-            </a>
-        </div>
     </div>
 </section>
 

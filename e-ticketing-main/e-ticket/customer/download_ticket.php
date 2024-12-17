@@ -8,42 +8,34 @@ if (!isset($_SESSION['customer_id'])) {
     exit();
 }
 
-if (isset($_GET['booking_id'])) {
-    $booking_id = (int)$_GET['booking_id'];
+$customer_id = $_SESSION['customer_id'];
+$booking_id = isset($_GET['booking_id']) ? $_GET['booking_id'] : null;
 
-    // Query to fetch the ticket details based on the booking ID
-    $query = $conn->prepare("
-        SELECT tickets.ticket_number, tickets.full_name, tickets.departure, tickets.destination, tickets.departure_date, tickets.ticket_status
-        FROM tickets
-        JOIN bookings ON tickets.fk_booking_id = bookings.booking_id
-        WHERE bookings.booking_id = ? AND bookings.fk_user_id = ?
-    ");
-    $query->bind_param("ii", $booking_id, $_SESSION['customer_id']);
-    $query->execute();
-    $result = $query->get_result();
+// Query the database for the ticket information
+$query = "SELECT booking_id, ticket_number, departure, destination, departure_date, first_name, last_name, status, passenger_type, total_cost
+          FROM bookings
+          WHERE fk_user_id = ? AND booking_id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("ii", $customer_id, $booking_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$ticket = $result->fetch_assoc();
 
-    if ($result->num_rows > 0) {
-        $ticket = $result->fetch_assoc();
+if ($ticket) {
+    // Display ticket details
+    echo "<h1>Ticket Details</h1>";
+    echo "<p><strong>Ticket Number:</strong> " . htmlspecialchars($ticket['ticket_number']) . "</p>";
+    echo "<p><strong>Passenger Name:</strong> " . htmlspecialchars($ticket['first_name']) . " " . htmlspecialchars($ticket['last_name']) . "</p>";
+    echo "<p><strong>Departure:</strong> " . htmlspecialchars($ticket['departure']) . "</p>";
+    echo "<p><strong>Destination:</strong> " . htmlspecialchars($ticket['destination']) . "</p>";
+    echo "<p><strong>Departure Date:</strong> " . htmlspecialchars($ticket['departure_date']) . "</p>";
+    echo "<p><strong>Status:</strong> " . htmlspecialchars($ticket['status']) . "</p>";
+    echo "<p><strong>Passenger Type:</strong> " . htmlspecialchars($ticket['passenger_type']) . "</p>";
+    echo "<p><strong>Total Cost:</strong> " . htmlspecialchars($ticket['total_cost']) . "</p>";
 
-        // Generate ticket content (this can be a PDF or other formats)
-        $ticket_content = "
-            Ticket Number: " . $ticket['ticket_number'] . "\n
-            Full Name: " . $ticket['full_name'] . "\n
-            Departure: " . $ticket['departure'] . "\n
-            Destination: " . $ticket['destination'] . "\n
-            Departure Date: " . $ticket['departure_date'] . "\n
-            Status: " . $ticket['ticket_status'] . "\n
-        ";
-
-        // Send the ticket as a downloadable file
-        header('Content-Type: text/plain');
-        header('Content-Disposition: attachment; filename="ticket_' . $ticket['ticket_number'] . '.txt"');
-        echo $ticket_content;
-        exit();
-    } else {
-        echo "Ticket not found.";
-    }
+    // Provide the download link for the ticket
+    echo "<a href='download_ticket.php?booking_id=" . htmlspecialchars($ticket['booking_id']) . "' class='btn btn-success'>Download Ticket</a>";
 } else {
-    echo "Invalid booking ID.";
+    echo "Ticket information not found!";
 }
 ?>

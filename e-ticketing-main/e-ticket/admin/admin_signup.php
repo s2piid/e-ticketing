@@ -2,12 +2,10 @@
 session_start();
 include('C:/xampp/htdocs/e-ticketing-main/e-ticket/config.php');
 
-
-
-    // Check if the database connection exists
-    if (!$conn) {
-        die("Database connection error: " . mysqli_connect_error());
-    }
+// Check if the database connection exists
+if (!$conn) {
+    die("Database connection error: " . mysqli_connect_error());
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
@@ -23,11 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm_password) {
         $error_message = "Passwords do not match.";
     } else {
-        // Hash the password for security
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-
-        // Database connection
-        
 
         // Check if username or email already exists
         $stmt = $conn->prepare("SELECT user_id FROM Users WHERE username = ? OR email = ?");
@@ -39,11 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = "Username or email already exists.";
         } else {
             // Insert new admin user
-            $acc_type = 'admin';
             $stmt = $conn->prepare("INSERT INTO users (username, password, acc_type, email, phone_num, created_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)");
             $stmt->bind_param("sssss", $username, $password_hash, $acc_type, $email, $phone_num);
-
-
 
             if ($stmt->execute()) {
                 $_SESSION['admin_id'] = $stmt->insert_id;
@@ -65,8 +56,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Signup</title>
-<link rel="stylesheet" href="style.css">
-<script src="script.js"></script>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        background: linear-gradient(to right, #007bff, #00c6ff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+    }
+
+    .login-container {
+        background: #fff;
+        width: 400px;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        text-align: center;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="phone_num"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    input:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .btn-login:hover {
+        background-color: #0056b3;
+    }
+
+    .error-message {
+        color: #ff3333;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    p {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #333;
+    }
+</style>
 </head>
 <body>
 <div class="login-container">

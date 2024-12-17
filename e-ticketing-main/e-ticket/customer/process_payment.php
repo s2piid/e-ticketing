@@ -1,7 +1,9 @@
 <?php
 session_start();
 include('C:/xampp/htdocs/e-ticketing-main/e-ticket/config.php');
-
+// echo "<pre>";
+// print_r($_SESSION);
+// echo "</pre>";
 // Ensure the user is logged in
 if (!isset($_SESSION['customer_id'])) {
     header("Location: customer_login.php");
@@ -39,8 +41,6 @@ $discount_rates = [
 ];
 
 $error_message = $success_message = '';
-$upload_dir = 'uploads/'; // Directory where the images will be stored
-$valid_id_paths = [];
 
 // Ensure the form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reference_number'])) {
@@ -50,32 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reference_number'])) 
     if (!preg_match('/^\d{13}$/', $reference_number)) {
         $error_message = "Invalid GCash reference number. It must be 13 digits.";
     } else {
-        // Handle file uploads
-        foreach ($passenger_details as $index => $passenger) {
-            if (isset($_FILES['id_photo_' . $index]) && $_FILES['id_photo_' . $index]['error'] == 0) {
-                // File validation
-                $file_tmp = $_FILES['id_photo_' . $index]['tmp_name'];
-                $file_name = $_FILES['id_photo_' . $index]['name'];
-                $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-                $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-                
-                if (in_array(strtolower($file_ext), $allowed_extensions)) {
-                    $file_path = $upload_dir . uniqid('img_', true) . '.' . $file_ext;
-                    if (move_uploaded_file($file_tmp, $file_path)) {
-                        $valid_id_paths[] = $file_path;
-                    } else {
-                        $error_message = "Error uploading image for passenger " . ($index + 1);
-                        break;
-                    }
-                } else {
-                    $error_message = "Invalid file type for passenger " . ($index + 1);
-                    break;
-                }
-            } else {
-                $valid_id_paths[] = null; // No file uploaded for this passenger
-            }
-        }
-
         // Check if reference number is unique
         $check_ref = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE reference_number = ?");
         $check_ref->bind_param("s", $reference_number);
@@ -88,45 +62,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reference_number'])) 
             $error_message = "This reference number is already used.";
         } else {
             // Calculate total cost and insert booking data
-            try {
-                $conn->begin_transaction();
-                $stmt = $conn->prepare("
-                    INSERT INTO bookings (
-                        fk_user_id, fk_ferry_id, departure, destination, departure_date,
-                        first_name, middle_name, last_name, gender, birth_date, nationality,
-                        civil_status, address, passenger_type, valid_id, accom_price, discount, total_cost, booking_date, status, reference_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
-                ");
-                $status = 'pending';
-                $total_cost = 0;
+           // Prepare the SQL statement
+$stmt = $conn->prepare("
+INSERT INTO bookings (
+    fk_user_id, fk_ferry_id, departure, destination, departure_date,
+    first_name, middle_name, last_name, gender, birth_date, 
+    civil_status, nationality, address, passenger_type, 
+    accom_price, valid_id, discount, total_cost, status, 
+    reference_number, ticket_number
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+");
 
-                foreach ($passenger_details as $index => $passenger) {
-                    $discount_rate = ($discount_rates[strtolower($passenger['passenger_type'])] ?? 0);
-                    $valid_id = $valid_id_paths[$index] ?? null; // Get the uploaded image path or null
-                    $total_cost += $accom_price * (1 - $discount_rate);
+if (!$stmt) {
+throw new Exception("Failed to prepare the SQL statement: " . $conn->error);
+}
 
-                    $stmt->bind_param(
-                        "iissssssssssssddssss",
-                        $customer_id, $ferry_id, $departure, $destination, $departure_date,
-                        $passenger['first_name'], $passenger['middle_name'], $passenger['last_name'],
-                        $passenger['gender'], $passenger['birth_date'], $passenger['nationality'],
-                        $passenger['civil_status'], $passenger['address'], $passenger['passenger_type'],
-                        $valid_id, $accom_price, $discount_rate, $total_cost,
-                        $status, $reference_number
-                    );
+$status = 'pending';
+$total_cost = 0;
+$ticket_number = 'TICKET-' . strtoupper(bin2hex(random_bytes(5)));
 
-                    if (!$stmt->execute()) {
-                        throw new Exception("Insert failed: " . $stmt->error);
-                    }
-                }
+// Loop through passenger details
+foreach ($passenger_details as $passenger) {
+// Calculate discount and total cost
+$discount_rate = ($discount_rates[strtolower($passenger['passenger_type'])] ?? 0);
+$passenger_total_cost = $accom_price * (1 - $discount_rate);
+$total_cost += $passenger_total_cost;
 
-                $conn->commit();
-                unset($_SESSION['selected_ferry'], $_SESSION['selected_accommodation'], $_SESSION['passenger_details']);
-                $success_message = "Booking successfully submitted! Your Reference Number: $reference_number.";
-            } catch (Exception $e) {
-                $conn->rollback();
-                $error_message = "Error processing your booking. Please contact support.";
-            }
+// Assign the parameters to variables
+$first_name = $passenger['first_name'];
+$middle_name = $passenger['middle_name'];
+$last_name = $passenger['last_name'];
+$gender = $passenger['gender'];
+$birth_date = $passenger['birth_date'];
+$civil_status = $passenger['civil_status'];
+$nationality = $passenger['nationality'];
+$address = $passenger['address'];
+$passenger_type = $passenger['passenger_type'];
+$valid_id = $passenger['id_file'] ?? null;
+$accommodation_price = $accom_price;
+
+// Bind parameters for each passenger
+$stmt->bind_param(
+    "iisssssssssssssdsssss",
+    $customer_id,        // fk_user_id
+    $ferry_id,           // fk_ferry_id
+    $departure,          // departure
+    $destination,        // destination
+    $departure_date,     // departure_date
+    $first_name,         // first_name
+    $middle_name,        // middle_name
+    $last_name,          // last_name
+    $gender,             // gender
+    $birth_date,         // birth_date
+    $civil_status,       // civil_status
+    $nationality,        // nationality
+    $address,            // address
+    $passenger_type,     // passenger_type
+    $accommodation_price,// accom_price
+    $valid_id,           // valid_id
+    $discount_rate,      // discount
+    $passenger_total_cost, // total_cost
+    $status,             // status
+    $reference_number,   // reference_number
+    $ticket_number       // ticket_number
+);
+
+if (!$stmt->execute()) {
+    throw new Exception("Insert failed: " . $stmt->error);
+}
+}
+
+$conn->commit();
+unset($_SESSION['selected_ferry'], $_SESSION['selected_accommodation'], $_SESSION['passenger_details']);
+$success_message = "Booking successfully submitted! Please check your booking history.";
+
         }
     }
 }
